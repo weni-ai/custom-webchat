@@ -50,6 +50,16 @@ export interface Message {
   timestamp: Date;
   type: 'text' | 'image' | 'file' | 'quick_reply' | 'carousel' | 'video' | 'audio';
   metadata?: MessageMetadata;
+  /** Status da mensagem (para streaming) */
+  status?: 'pending' | 'streaming' | 'delivered';
+}
+
+/** Estado de streaming de uma mensagem */
+export interface StreamState {
+  id: string;
+  text: string;
+  timestamp: number;
+  isActive: boolean;
 }
 
 export interface MessageMetadata {

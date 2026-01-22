@@ -14,16 +14,31 @@ interface WeniServerMessage {
     type?: string;
     text?: string;
     media?: string;
+    messageId?: string;
     quick_replies?: Array<{ title: string; payload: string }>;
   };
   text?: string;
   error?: string;
   warning?: string;
+  id?: string;
+  // Campos de streaming
+  v?: string;  // delta content
+  seq?: number; // delta sequence number
   data?: {
     language?: string;
     [key: string]: unknown;
   };
 }
+
+// Estado de streaming ativo
+interface StreamingState {
+  id: string;
+  text: string;
+  timestamp: number;
+}
+
+const MESSAGE_ID_PREFIX = 'msg_';
+const STREAM_INITIAL_SEQUENCE = 1;
 
 /**
  * Hook personalizado para conectar ao socket do Weni
@@ -44,6 +59,13 @@ export function useWeniSocket(config: WebChatConfig) {
   const isRegisteredRef = useRef(false);
   const maxReconnectAttempts = 5;
   const pingInterval = 30000; // 30 segundos
+
+  // Estado de streaming
+  const streamsRef = useRef<Map<string, StreamingState>>(new Map());
+  const activeStreamIdRef = useRef<string | null>(null);
+  const pendingDeltasRef = useRef<Map<number, string>>(new Map());
+  const nextExpectedSeqRef = useRef<number>(STREAM_INITIAL_SEQUENCE);
+  const streamMessageEmittedRef = useRef<boolean>(false);
 
   const [state, setState] = useState<ChatState>({
     isConnected: false,
@@ -69,9 +91,205 @@ export function useWeniSocket(config: WebChatConfig) {
     return sessionId;
   }, [config.channelUuid, config.sessionId]);
 
+  // Resetar estado de streaming
+  const resetStreamState = useCallback((streamId: string | null = null) => {
+    activeStreamIdRef.current = streamId;
+    pendingDeltasRef.current = new Map();
+    nextExpectedSeqRef.current = STREAM_INITIAL_SEQUENCE;
+    streamMessageEmittedRef.current = false;
+  }, []);
+
+  // Extrair message ID do raw message
+  const getMessageIdFromRaw = useCallback((raw: WeniServerMessage): string | null => {
+    const id = raw?.message?.messageId || raw?.id;
+    return id ? MESSAGE_ID_PREFIX + id : null;
+  }, []);
+
+  // Processar stream_start
+  const processStreamStart = useCallback((raw: WeniServerMessage) => {
+    const messageId = getMessageIdFromRaw(raw);
+    if (!messageId) {
+      console.error('[WebChat] stream_start recebido sem id');
+      return;
+    }
+
+    console.log('[WebChat] 🌊 Iniciando streaming:', messageId);
+    resetStreamState(messageId);
+    streamsRef.current.set(messageId, { id: messageId, text: '', timestamp: Date.now() });
+    
+    // Mostrar indicador de digitação enquanto streaming começa
+    setState(prev => ({ ...prev, isTyping: true }));
+  }, [getMessageIdFromRaw, resetStreamState]);
+
+  // Atualizar mensagem de streaming
+  const updateStreamingMessage = useCallback((streamId: string, text: string) => {
+    setState(prev => {
+      const existingIndex = prev.messages.findIndex(m => m.id === streamId);
+      
+      if (existingIndex >= 0) {
+        // Atualizar mensagem existente
+        const updatedMessages = [...prev.messages];
+        updatedMessages[existingIndex] = {
+          ...updatedMessages[existingIndex],
+          text,
+          status: 'streaming',
+        };
+        return { ...prev, messages: updatedMessages, isTyping: false };
+      } else {
+        // Criar nova mensagem de streaming
+        const newMessage: Message = {
+          id: streamId,
+          text,
+          sender: 'bot',
+          timestamp: new Date(),
+          type: 'text',
+          status: 'streaming',
+        };
+        return { ...prev, messages: [...prev.messages, newMessage], isTyping: false };
+      }
+    });
+  }, []);
+
+  // Aplicar conteúdo ao stream
+  const appendStreamContent = useCallback((streamId: string, content: string) => {
+    const current = streamsRef.current.get(streamId);
+    if (!current) return;
+
+    const mergedText = current.text + content;
+    streamsRef.current.set(streamId, { ...current, text: mergedText, timestamp: Date.now() });
+    
+    updateStreamingMessage(streamId, mergedText);
+  }, [updateStreamingMessage]);
+
+  // Aplicar deltas pendentes em ordem
+  const applyPendingDeltas = useCallback((streamId: string) => {
+    while (pendingDeltasRef.current.has(nextExpectedSeqRef.current)) {
+      const content = pendingDeltasRef.current.get(nextExpectedSeqRef.current)!;
+      pendingDeltasRef.current.delete(nextExpectedSeqRef.current);
+      appendStreamContent(streamId, content);
+      nextExpectedSeqRef.current++;
+    }
+  }, [appendStreamContent]);
+
+  // Processar delta
+  const processDelta = useCallback((raw: WeniServerMessage) => {
+    const seq = raw.seq;
+    const content = raw.v || '';
+
+    if (typeof seq !== 'number' || seq < STREAM_INITIAL_SEQUENCE) {
+      return;
+    }
+
+    // Criar stream sintético se delta chegar sem stream_start
+    if (!activeStreamIdRef.current) {
+      const messageId = getMessageIdFromRaw(raw) || MESSAGE_ID_PREFIX + uuidv4();
+      console.log('[WebChat] 🌊 Criando stream sintético:', messageId);
+      resetStreamState(messageId);
+      streamMessageEmittedRef.current = true;
+      streamsRef.current.set(messageId, { id: messageId, text: '', timestamp: Date.now() });
+    }
+
+    const streamId = activeStreamIdRef.current!;
+
+    // Verificar se é o primeiro delta
+    if (nextExpectedSeqRef.current === STREAM_INITIAL_SEQUENCE && seq >= STREAM_INITIAL_SEQUENCE) {
+      console.log('[WebChat] 🌊 Primeiro delta recebido');
+      setState(prev => ({ ...prev, isTyping: false }));
+      
+      if (!streamMessageEmittedRef.current) {
+        streamMessageEmittedRef.current = true;
+        updateStreamingMessage(streamId, '');
+      }
+    }
+
+    // Processar delta baseado na sequência
+    if (seq === nextExpectedSeqRef.current) {
+      // Em ordem - aplicar imediatamente
+      appendStreamContent(streamId, content);
+      nextExpectedSeqRef.current++;
+      
+      // Verificar deltas pendentes
+      applyPendingDeltas(streamId);
+    } else if (seq > nextExpectedSeqRef.current) {
+      // Fora de ordem - buffer para depois
+      pendingDeltasRef.current.set(seq, content);
+    }
+    // Ignorar seq < nextExpectedSeq (duplicado)
+  }, [getMessageIdFromRaw, resetStreamState, appendStreamContent, applyPendingDeltas, updateStreamingMessage]);
+
+  // Processar stream_end
+  const processStreamEnd = useCallback((raw: WeniServerMessage) => {
+    const messageId = getMessageIdFromRaw(raw);
+    if (!messageId) {
+      console.error('[WebChat] stream_end recebido sem id');
+      return;
+    }
+
+    console.log('[WebChat] 🌊 Finalizando streaming:', messageId);
+    setState(prev => ({ ...prev, isTyping: false }));
+
+    const streamData = streamsRef.current.get(messageId);
+    const finalText = streamData?.text || '';
+
+    // Atualizar mensagem para status delivered
+    setState(prev => {
+      const existingIndex = prev.messages.findIndex(m => m.id === messageId);
+      
+      if (existingIndex >= 0) {
+        const updatedMessages = [...prev.messages];
+        updatedMessages[existingIndex] = {
+          ...updatedMessages[existingIndex],
+          text: finalText,
+          status: 'delivered',
+        };
+        return { ...prev, messages: updatedMessages };
+      }
+      return prev;
+    });
+
+    // Cleanup
+    streamsRef.current.delete(messageId);
+    if (activeStreamIdRef.current === messageId) {
+      resetStreamState();
+    }
+  }, [getMessageIdFromRaw, resetStreamState]);
+
+  // Detectar tipo de mensagem
+  const extractMessageType = useCallback((raw: WeniServerMessage): string => {
+    // delta messages têm 'v' e 'seq' mas não 'type'
+    if ('v' in raw && 'seq' in raw && !('type' in raw)) {
+      return 'delta';
+    }
+    if (raw.type) {
+      return raw.type;
+    }
+    if (raw.message && raw.message.type) {
+      return raw.message.type;
+    }
+    return 'unknown';
+  }, []);
+
   // Processar mensagem do servidor
   const handleServerMessage = useCallback((data: WeniServerMessage) => {
     console.log('[WebChat] 📨 Processando mensagem:', data);
+    
+    const messageType = extractMessageType(data);
+
+    // Processar streaming
+    if (messageType === 'stream_start') {
+      processStreamStart(data);
+      return;
+    }
+
+    if (messageType === 'delta') {
+      processDelta(data);
+      return;
+    }
+
+    if (messageType === 'stream_end') {
+      processStreamEnd(data);
+      return;
+    }
     
     // Ignorar mensagens de controle
     if (data.type === 'pong') {
@@ -224,7 +442,7 @@ export function useWeniSocket(config: WebChatConfig) {
     if (data.type === 'typing_stop') {
       setState(prev => ({ ...prev, isTyping: false }));
     }
-  }, [config, getSessionId, state.sessionId]);
+  }, [config, getSessionId, state.sessionId, extractMessageType, processStreamStart, processDelta, processStreamEnd]);
 
   // Iniciar ping interval
   const startPingInterval = useCallback(() => {

@@ -18,6 +18,7 @@ export function MessageBubble({ message, isLast }: MessageBubbleProps) {
   });
 
   const isCarousel = message.type === 'carousel' && message.metadata?.products;
+  const isStreaming = message.status === 'streaming';
 
   return (
     <motion.div
@@ -28,10 +29,13 @@ export function MessageBubble({ message, isLast }: MessageBubbleProps) {
       transition={{ type: 'spring', damping: 25, stiffness: 300 }}
       layout
     >
-      <div className={`message-bubble ${isUser ? 'message-bubble--user' : 'message-bubble--bot'} ${isCarousel ? 'message-bubble--carousel' : ''}`}>
+      <div className={`message-bubble ${isUser ? 'message-bubble--user' : 'message-bubble--bot'} ${isCarousel ? 'message-bubble--carousel' : ''} ${isStreaming ? 'message-bubble--streaming' : ''}`}>
         {/* Conteúdo baseado no tipo */}
         {message.type === 'text' && (
-          <p className="message-text">{message.text}</p>
+          <p className="message-text">
+            {message.text}
+            {isStreaming && <span className="streaming-cursor">▊</span>}
+          </p>
         )}
 
         {message.type === 'image' && message.metadata?.imageUrl && (

@@ -277,6 +277,33 @@
   white-space: pre-wrap;
 }
 
+/* Cursor de streaming */
+.streaming-cursor {
+  display: inline-block;
+  color: var(--chat-primary);
+  animation: streaming-blink 0.8s step-end infinite;
+  margin-left: 2px;
+  font-weight: normal;
+}
+
+@keyframes streaming-blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Mensagem em streaming */
+.message-bubble--streaming {
+  min-height: 40px;
+}
+
+.message-bubble--streaming .message-text {
+  min-height: 1.2em;
+}
+
 .message-meta {
   display: flex;
   align-items: center;
