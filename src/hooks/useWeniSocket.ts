@@ -344,6 +344,19 @@ export function useWeniSocket(config: WebChatConfig) {
       return;
     }
 
+    // Processar indicador de digitação (ANTES de mensagens para não ser ignorado)
+    if (data.type === 'typing' || data.type === 'typing_start') {
+      console.log('[WebChat] ✏️ Bot está digitando...');
+      setState(prev => ({ ...prev, isTyping: true }));
+      return;
+    }
+    
+    if (data.type === 'typing_stop') {
+      console.log('[WebChat] ✏️ Bot parou de digitar');
+      setState(prev => ({ ...prev, isTyping: false }));
+      return;
+    }
+
     // Processar mensagem do bot
     if (data.type === 'message' || data.message) {
       const messageData = data.message || data;
@@ -432,15 +445,6 @@ export function useWeniSocket(config: WebChatConfig) {
       }));
 
       config.onMessage?.(message);
-    }
-
-    // Processar indicador de digitação
-    if (data.type === 'typing' || data.type === 'typing_start') {
-      setState(prev => ({ ...prev, isTyping: true }));
-    }
-    
-    if (data.type === 'typing_stop') {
-      setState(prev => ({ ...prev, isTyping: false }));
     }
   }, [config, getSessionId, state.sessionId, extractMessageType, processStreamStart, processDelta, processStreamEnd]);
 
@@ -639,9 +643,11 @@ export function useWeniSocket(config: WebChatConfig) {
       type: 'text',
     };
 
+    // Adiciona a mensagem do usuário E ativa o indicador de typing instantaneamente
     setState(prev => ({
       ...prev,
       messages: [...prev.messages, message],
+      isTyping: true, // Mostrar typing imediatamente ao enviar
     }));
 
     // Formato de mensagem do Weni
@@ -676,9 +682,11 @@ export function useWeniSocket(config: WebChatConfig) {
       type: 'text',
     };
 
+    // Adiciona a mensagem do usuário E ativa o indicador de typing instantaneamente
     setState(prev => ({
       ...prev,
       messages: [...prev.messages, message],
+      isTyping: true, // Mostrar typing imediatamente ao enviar
     }));
 
     const payloadMessage = {

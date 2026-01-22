@@ -105,7 +105,7 @@ function ChatWidgetInner({ config, autoConnect, startOpen }: ChatWidgetProps) {
             
             <div className="chat-body">
               <ChatMessages />
-              <TypingIndicator />
+              <TypingIndicator avatarUrl={config.avatarUrl} />
             </div>
             
             <ChatInput placeholder={config.inputPlaceholder} />
