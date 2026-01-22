@@ -31,6 +31,20 @@ export interface WebChatConfig {
   userMessageColor?: string;
   /** Cor das mensagens do bot */
   botMessageColor?: string;
+  /** Cor do header (topo) */
+  headerColor?: string;
+  /** Cor do footer (rodapé/input) */
+  footerColor?: string;
+  /** Cor do texto do header */
+  textHeaderColor?: string;
+  /** Cor do texto do input */
+  textInputColor?: string;
+  /** Cor do placeholder */
+  textPlaceholderColor?: string;
+  /** Cor do texto das mensagens do usuário */
+  textUserMessageColor?: string;
+  /** Cor do texto das mensagens do bot */
+  textBotMessageColor?: string;
   /** Placeholder do input */
   inputPlaceholder?: string;
   /** Callback quando receber mensagem */

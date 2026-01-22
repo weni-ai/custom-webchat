@@ -81,6 +81,13 @@ function ChatWidgetInner({ config, autoConnect, startOpen }: ChatWidgetProps) {
     '--chat-text': config.textColor || '#e2e8f0',
     '--chat-user-bubble': config.userMessageColor || '#6366f1',
     '--chat-bot-bubble': config.botMessageColor || '#1e1e3f',
+    '--chat-header': config.headerColor || config.primaryColor || '#6366f1',
+    '--chat-footer': config.footerColor || config.backgroundColor || '#0f0f23',
+    '--chat-text-header': config.textHeaderColor || '#ffffff',
+    '--chat-text-input': config.textInputColor || '#e2e8f0',
+    '--chat-text-placeholder': config.textPlaceholderColor || '#94a3b8',
+    '--chat-text-user-message': config.textUserMessageColor || '#ffffff',
+    '--chat-text-bot-message': config.textBotMessageColor || '#e2e8f0',
   } as React.CSSProperties;
 
   return (
