@@ -79,11 +79,10 @@ export function ChatMessages() {
                 <span>{formatDateLabel(date)}</span>
               </div>
               
-              {dayMessages.map((message, index) => (
+              {dayMessages.map((message) => (
                 <MessageBubble 
                   key={message.id} 
                   message={message}
-                  isLast={index === dayMessages.length - 1}
                 />
               ))}
             </div>

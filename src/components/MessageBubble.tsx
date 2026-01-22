@@ -1,16 +1,16 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { CheckCheck, FileText, ExternalLink } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useChatContext } from '../context/ChatContext';
 import { ProductCarousel } from './ProductCarousel';
 import type { Message, CarouselItem } from '../types';
 
 interface MessageBubbleProps {
   message: Message;
-  isLast: boolean;
 }
 
-export function MessageBubble({ message, isLast }: MessageBubbleProps) {
+export function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.sender === 'user';
   const time = message.timestamp.toLocaleTimeString('pt-BR', { 
     hour: '2-digit', 
@@ -32,10 +32,62 @@ export function MessageBubble({ message, isLast }: MessageBubbleProps) {
       <div className={`message-bubble ${isUser ? 'message-bubble--user' : 'message-bubble--bot'} ${isCarousel ? 'message-bubble--carousel' : ''} ${isStreaming ? 'message-bubble--streaming' : ''}`}>
         {/* Conteúdo baseado no tipo */}
         {message.type === 'text' && (
-          <p className="message-text">
-            {message.text}
+          <div className="message-text">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                // Links abrem em nova aba
+                a: ({ href, children }) => (
+                  <a 
+                    href={href} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="markdown-link"
+                  >
+                    {children}
+                  </a>
+                ),
+                // Parágrafos sem margem extra
+                p: ({ children }) => <p className="markdown-p">{children}</p>,
+                // Listas estilizadas
+                ul: ({ children }) => <ul className="markdown-ul">{children}</ul>,
+                ol: ({ children }) => <ol className="markdown-ol">{children}</ol>,
+                li: ({ children }) => <li className="markdown-li">{children}</li>,
+                // Código inline
+                code: ({ className, children, ...props }) => {
+                  const isInline = !className;
+                  if (isInline) {
+                    return <code className="markdown-code-inline" {...props}>{children}</code>;
+                  }
+                  return (
+                    <code className="markdown-code-block" {...props}>
+                      {children}
+                    </code>
+                  );
+                },
+                // Bloco de código
+                pre: ({ children }) => <pre className="markdown-pre">{children}</pre>,
+                // Negrito e itálico
+                strong: ({ children }) => <strong className="markdown-strong">{children}</strong>,
+                em: ({ children }) => <em className="markdown-em">{children}</em>,
+                // Títulos
+                h1: ({ children }) => <h1 className="markdown-h1">{children}</h1>,
+                h2: ({ children }) => <h2 className="markdown-h2">{children}</h2>,
+                h3: ({ children }) => <h3 className="markdown-h3">{children}</h3>,
+                // Blockquote
+                blockquote: ({ children }) => <blockquote className="markdown-blockquote">{children}</blockquote>,
+                // Separador
+                hr: () => <hr className="markdown-hr" />,
+                // Imagens
+                img: ({ src, alt }) => (
+                  <img src={src} alt={alt || ''} className="markdown-img" loading="lazy" />
+                ),
+              }}
+            >
+              {message.text}
+            </ReactMarkdown>
             {isStreaming && <span className="streaming-cursor">▊</span>}
-          </p>
+          </div>
         )}
 
         {message.type === 'image' && message.metadata?.imageUrl && (
@@ -46,7 +98,11 @@ export function MessageBubble({ message, isLast }: MessageBubbleProps) {
               className="message-image"
               loading="lazy"
             />
-            {message.text && <p className="message-text">{message.text}</p>}
+            {message.text && (
+              <div className="message-text">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.text}</ReactMarkdown>
+              </div>
+            )}
           </div>
         )}
 
