@@ -267,6 +267,51 @@ function App() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    
+    return html; // Retorna o HTML para uso em downloadAllFiles
+  };
+
+  // Função para baixar todos os 3 arquivos de uma vez
+  const downloadAllFiles = async () => {
+    try {
+      // 1. Baixar o HTML
+      generateExampleHTML();
+      
+      // Pequeno delay entre downloads para evitar bloqueio do navegador
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // 2. Baixar o CSS
+      const cssResponse = await fetch('/widget/webchat-widget.css');
+      const cssContent = await cssResponse.text();
+      const cssBlob = new Blob([cssContent], { type: 'text/css' });
+      const cssUrl = URL.createObjectURL(cssBlob);
+      const cssLink = document.createElement('a');
+      cssLink.href = cssUrl;
+      cssLink.download = 'webchat-widget.css';
+      document.body.appendChild(cssLink);
+      cssLink.click();
+      document.body.removeChild(cssLink);
+      URL.revokeObjectURL(cssUrl);
+      
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // 3. Baixar o JS
+      const jsResponse = await fetch('/widget/webchat-widget.iife.js');
+      const jsContent = await jsResponse.text();
+      const jsBlob = new Blob([jsContent], { type: 'application/javascript' });
+      const jsUrl = URL.createObjectURL(jsBlob);
+      const jsLink = document.createElement('a');
+      jsLink.href = jsUrl;
+      jsLink.download = 'webchat-widget.iife.js';
+      document.body.appendChild(jsLink);
+      jsLink.click();
+      document.body.removeChild(jsLink);
+      URL.revokeObjectURL(jsUrl);
+      
+    } catch (error) {
+      console.error('Erro ao baixar arquivos:', error);
+      alert('Erro ao baixar os arquivos. Tente novamente.');
+    }
   };
 
   // Função para baixar todos os arquivos do widget como ZIP
@@ -721,33 +766,17 @@ Estrutura final:
         <div className="download-section">
           <button 
             className="download-button"
-            onClick={generateExampleHTML}
+            onClick={downloadAllFiles}
           >
             <Download size={18} />
-            <span>1. Baixar HTML</span>
+            <span>Baixar Widget (3 arquivos)</span>
           </button>
           
-          <div className="download-files">
-            <a 
-              href="/widget/webchat-widget.css" 
-              download="webchat-widget.css"
-              className="download-file-link"
-            >
-              <Download size={14} />
-              2. webchat-widget.css
-            </a>
-            <a 
-              href="/widget/webchat-widget.iife.js" 
-              download="webchat-widget.iife.js"
-              className="download-file-link"
-            >
-              <Download size={14} />
-              3. webchat-widget.iife.js
-            </a>
-          </div>
-          
           <p className="download-hint">
-            Baixe os 3 arquivos e coloque na mesma pasta do seu site
+            Serão baixados: index.html, webchat-widget.css e webchat-widget.iife.js
+          </p>
+          <p className="download-hint">
+            Coloque os 3 arquivos na mesma pasta do seu site
           </p>
         </div>
       </div>
