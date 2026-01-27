@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teste Widget Custom</title>
+  <link rel="stylesheet" href="webchat-widget.css">
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 40px;
+      background: #1a1a2e;
+      color: #fff;
+    }
+    h1 { color: #6366f1; }
+    p { color: #94a3b8; }
+    .instructions {
+      background: #252550;
+      padding: 20px;
+      border-radius: 12px;
+      margin-top: 20px;
+    }
+    .instructions li {
+      margin: 10px 0;
+      color: #e2e8f0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Teste do WebChat Custom</h1>
+  <p>Esta página carrega o widget customizado para testar as customizações.</p>
+  
+  <div class="instructions">
+    <h3>📋 O que está sendo testado:</h3>
+    <ol>
+      <li>Cores customizadas (modo noite)</li>
+      <li>Caixa de texto do input</li>
+      <li>CSS variables aplicadas corretamente</li>
+    </ol>
+  </div>
+
+  <script>
+    window.WEBCHAT_CONFIG = {
+      // Conexão
+      socketUrl: 'https://websocket.weni.ai',
+      channelUuid: '81310c47-8520-40bf-a8a2-281bd495b7ba',
+      host: 'https://flows.weni.ai',
+      
+      // Tema
+      themeMode: 'dark',
+      
+      // Aparência
+      primaryColor: '#6366f1',
+      secondaryColor: '#818cf8',
+      backgroundColor: '#0f0f23',
+      userMessageColor: '#6366f1',
+      botMessageColor: '#1e1e3f',
+      headerColor: '#6366f1',
+      footerColor: '#1e1e3f',
+      
+      // Cores de texto
+      textHeaderColor: '#ffffff',
+      textUserMessageColor: '#ffffff',
+      textBotMessageColor: '#e2e8f0',
+      textInputColor: '#e2e8f0',
+      textPlaceholderColor: '#94a3b8',
+      
+      // Textos
+      title: 'WebChat Custom',
+      subtitle: 'Testando customizações',
+      inputPlaceholder: 'Digite sua mensagem...',
+      welcomeMessage: 'Olá! Este é um teste do widget customizado.',
+      
+      // Configurações adicionais
+      autoConnect: false
+    };
+  </script>
+  <script src="webchat-widget.iife.js"></script>
+</body>
+</html>

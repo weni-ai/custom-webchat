@@ -5,7 +5,11 @@ import { MessageBubble } from './MessageBubble';
 import { QuickReplies } from './QuickReplies';
 import type { Message } from '../types';
 
-export function ChatMessages() {
+interface ChatMessagesProps {
+  welcomeMessage?: string;
+}
+
+export function ChatMessages({ welcomeMessage }: ChatMessagesProps) {
   const { messages, isConnected } = useChatContext();
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -66,7 +70,7 @@ export function ChatMessages() {
             </div>
             <p className="chat-messages-empty-text">
               {isConnected 
-                ? 'Olá! Como posso ajudar você hoje?' 
+                ? (welcomeMessage || 'Olá! Como posso ajudar você hoje?')
                 : 'Conecte-se para iniciar a conversa'}
             </p>
           </motion.div>

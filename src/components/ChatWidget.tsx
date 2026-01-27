@@ -70,8 +70,8 @@ function ChatWidgetInner({ config, autoConnect, startOpen }: ChatWidgetProps) {
     setIsMinimized(!isMinimized);
   };
 
-  // Contador de mensagens não lidas (simplificado)
-  const unreadCount = isOpen ? 0 : messages.filter(m => m.sender === 'bot').length;
+  // Badge de notificações desabilitado para evitar bugs visuais
+  // const unreadCount = isOpen ? 0 : messages.filter(m => m.sender === 'bot').length;
 
   // CSS Variables baseadas na config
   // Determinar se está em modo claro baseado na cor de fundo
@@ -119,7 +119,7 @@ function ChatWidgetInner({ config, autoConnect, startOpen }: ChatWidgetProps) {
             />
             
             <div className="chat-body">
-              <ChatMessages />
+              <ChatMessages welcomeMessage={config.welcomeMessage} />
               <TypingIndicator avatarUrl={config.avatarUrl} />
             </div>
             
@@ -139,7 +139,13 @@ function ChatWidgetInner({ config, autoConnect, startOpen }: ChatWidgetProps) {
             onClick={() => setIsMinimized(false)}
           >
             <div className="chat-minimized-content">
-              <span className="chat-minimized-title">{config.title || 'Chat'}</span>
+              <span className="chat-minimized-title">
+                {messages.length > 0 ? (
+                  messages[messages.length - 1].sender === 'user' 
+                    ? `Você disse: ${messages[messages.length - 1].text.substring(0, 30)}${messages[messages.length - 1].text.length > 30 ? '...' : ''}`
+                    : `${config.title || 'Agente'} disse: ${messages[messages.length - 1].text.substring(0, 30)}${messages[messages.length - 1].text.length > 30 ? '...' : ''}`
+                ) : (config.title || 'Chat')}
+              </span>
               <button 
                 className="chat-minimized-close"
                 onClick={(e) => {
@@ -195,19 +201,7 @@ function ChatWidgetInner({ config, autoConnect, startOpen }: ChatWidgetProps) {
           )}
         </AnimatePresence>
 
-        {/* Badge de mensagens não lidas */}
-        <AnimatePresence>
-          {!isOpen && unreadCount > 0 && (
-            <motion.span
-              className="chat-launcher-badge"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0 }}
-            >
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </motion.span>
-          )}
-        </AnimatePresence>
+        {/* Badge de mensagens não lidas - desabilitado para evitar bugs visuais */}
       </motion.button>
     </div>
   );

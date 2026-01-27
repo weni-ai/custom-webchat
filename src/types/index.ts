@@ -13,7 +13,7 @@ export interface WebChatConfig {
   sessionId?: string;
   /** Dados customizados do usuário */
   customData?: Record<string, unknown>;
-  /** Título do chat */
+  /** Nome do agente */
   title?: string;
   /** Subtítulo do chat */
   subtitle?: string;
@@ -25,6 +25,8 @@ export interface WebChatConfig {
   secondaryColor?: string;
   /** Cor de fundo */
   backgroundColor?: string;
+  /** Modo do tema (claro ou escuro) */
+  themeMode?: 'light' | 'dark';
   /** Cor do texto */
   textColor?: string;
   /** Cor das mensagens do usuário */
@@ -47,6 +49,8 @@ export interface WebChatConfig {
   textBotMessageColor?: string;
   /** Placeholder do input */
   inputPlaceholder?: string;
+  /** Mensagem de apresentação do chat */
+  welcomeMessage?: string;
   /** Callback quando receber mensagem */
   onMessage?: (message: Message) => void;
   /** Callback quando conectar */

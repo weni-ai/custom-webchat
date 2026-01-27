@@ -142,17 +142,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.1);
   border: none;
   border-radius: var(--chat-radius-sm);
-  color: var(--chat-text-muted);
+  color: var(--chat-text-header);
   cursor: pointer;
   transition: var(--chat-transition);
 }
 
 .chat-header-btn:hover {
-  background: var(--chat-surface-light);
-  color: var(--chat-text);
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--chat-text-header);
 }
 
 /* Body do chat */
@@ -664,6 +664,7 @@
 
 .chat-minimized-title {
   font-weight: 500;
+  color: #4b5563;
 }
 
 .chat-minimized-close {
@@ -713,6 +714,7 @@
 
 .chat-launcher--open {
   background: var(--chat-surface);
+  color: #4b5563;
 }
 
 /* Badge de notificação */
