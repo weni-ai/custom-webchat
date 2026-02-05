@@ -1,0 +1,45 @@
+name: Build backend image on push tag to ECR in shared
+
+on:
+  push:
+    tags:
+      - '*.*.*-develop'
+      - '*.*.*-staging'
+      - '*.*.*'
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      repository_name: ${{ steps.setup.outputs.repository_name }}
+    steps:
+      - name: Setup outputs
+        id: setup
+        run: |
+          export GITHUB_REPOSITORY_NAME="${GITHUB_REPOSITORY#$GITHUB_REPOSITORY_OWNER/}"
+          {
+            echo "repository_name=${GITHUB_REPOSITORY_NAME}"
+          } | tee -a "${GITHUB_OUTPUT}"
+
+          {
+            echo "### Workflow Outputs"
+            echo "| Variable        | Description     |"
+            echo "| --------------- | --------------- |"
+            echo "| repository_name | Repository name |"
+          } | tee -a "${GITHUB_STEP_SUMMARY}"
+
+  call-workflow:
+    uses: weni-ai/actions-workflows/.github/workflows/reusable-workflow.yaml@main
+    needs:
+      - setup
+    with:
+      image_repository: "${{ needs.setup.outputs.repository_name }}"
+      #kludge_webapp_secret_enable: true
+      dockerfile: "docker/Dockerfile"
+      target_repository: weni-ai/kubernetes-manifests-hermes
+      target_application: "${{ needs.setup.outputs.repository_name }}"
+      target_patch_file: deployment-image.json
+      image_tag_prefix: webapp-
+    secrets: inherit
+
+# vim: nu ts=2 fdm=indent et ft=yaml:
