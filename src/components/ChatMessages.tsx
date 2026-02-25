@@ -13,15 +13,29 @@ export function ChatMessages({ welcomeMessage }: ChatMessagesProps) {
   const { messages, isConnected } = useChatContext();
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const scrollToBottom = () => {
+    if (containerRef.current) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    }
+  };
+
   // Auto-scroll para nova mensagem
   useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.scrollTo({
-        top: containerRef.current.scrollHeight,
-        behavior: 'smooth',
-      });
-    }
+    scrollToBottom();
   }, [messages]);
+
+  // Scroll to bottom when container resizes (e.g. mobile keyboard open/close)
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new ResizeObserver(() => {
+      scrollToBottom();
+    });
+
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
 
   // Agrupar mensagens por data
   const groupedMessages = messages.reduce((groups, message) => {
