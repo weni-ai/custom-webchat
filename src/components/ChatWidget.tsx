@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X } from 'lucide-react';
 import { ChatProvider, useChatContext } from '../context/ChatContext';
@@ -30,6 +30,8 @@ export function ChatWidget({ config, autoConnect = true, startOpen = false }: Ch
 function ChatWidgetInner({ config, autoConnect, startOpen }: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(startOpen);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  const widgetRef = useRef<HTMLDivElement>(null);
   const { connect, isConnected, messages, connectionStatus, error } = useChatContext();
   
   // Verificar se há Channel UUID configurado
@@ -37,6 +39,64 @@ function ChatWidgetInner({ config, autoConnect, startOpen }: ChatWidgetProps) {
   
   // Verificar se há erro de conexão (UUID inválido, servidor não encontrado, etc)
   const hasConnectionError = connectionStatus === 'error' || error !== null;
+
+  // Handle mobile virtual keyboard via visualViewport API
+  useEffect(() => {
+    const isMobile = window.matchMedia('(max-width: 480px)').matches;
+    if (!isMobile) return;
+
+    const setHeight = (h: number) => {
+      if (widgetRef.current) {
+        widgetRef.current.style.height = `${h}px`;
+      }
+    };
+
+    const preventPageScroll = () => {
+      window.scrollTo(0, 0);
+    };
+
+    if (window.visualViewport) {
+      const viewport = window.visualViewport;
+      let fullHeight = viewport.height;
+
+      setHeight(fullHeight);
+
+      const handleResize = () => {
+        const visibleHeight = viewport.height;
+        const isKb = fullHeight - visibleHeight > 100;
+        setKeyboardOpen(isKb);
+        setHeight(visibleHeight);
+        preventPageScroll();
+      };
+
+      const handleOrientationChange = () => {
+        setTimeout(() => {
+          fullHeight = window.visualViewport!.height;
+          setHeight(fullHeight);
+        }, 300);
+      };
+
+      viewport.addEventListener('resize', handleResize);
+      viewport.addEventListener('scroll', preventPageScroll);
+      window.addEventListener('orientationchange', handleOrientationChange);
+
+      return () => {
+        viewport.removeEventListener('resize', handleResize);
+        viewport.removeEventListener('scroll', preventPageScroll);
+        window.removeEventListener('orientationchange', handleOrientationChange);
+      };
+    } else {
+      setHeight(window.innerHeight);
+
+      const handleResize = () => {
+        setHeight(window.innerHeight);
+        preventPageScroll();
+      };
+
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, []);
 
   // Auto-conectar quando configurado
   useEffect(() => {
@@ -111,7 +171,8 @@ function ChatWidgetInner({ config, autoConnect, startOpen }: ChatWidgetProps) {
       <AnimatePresence>
         {isOpen && !isMinimized && (
           <motion.div
-            className="chat-widget"
+            ref={widgetRef}
+            className={`chat-widget ${keyboardOpen ? 'chat-widget--keyboard-open' : ''}`}
             initial={{ opacity: 0, scale: 0.8, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}

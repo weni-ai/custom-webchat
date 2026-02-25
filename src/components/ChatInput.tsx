@@ -22,6 +22,10 @@ export function ChatInput({ placeholder = 'Digite sua mensagem...', disabled = f
     }
   }, [message]);
 
+  const handleFocus = () => {
+    setIsFocused(true);
+  };
+
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     
@@ -61,7 +65,7 @@ export function ChatInput({ placeholder = 'Digite sua mensagem...', disabled = f
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
-            onFocus={() => setIsFocused(true)}
+            onFocus={handleFocus}
             onBlur={() => setIsFocused(false)}
             placeholder={disabled ? 'Configure o Channel UUID...' : placeholder}
             className="chat-input-field"

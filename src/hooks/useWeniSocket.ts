@@ -531,6 +531,7 @@ export function useWeniSocket(config: WebChatConfig) {
           isConnected: true,
           isConnecting: false,
           sessionId,
+          error: null,
         }));
         
         // Enviar registro
